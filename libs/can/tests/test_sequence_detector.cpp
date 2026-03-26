@@ -403,7 +403,7 @@ TEST_CASE("check_timeouts causes timeout events", "[can][sequence_detector]") {
 // Pre-built rules (tests 14-19)
 // =============================================================================
 
-TEST_CASE("uds_request_response — positive response completes", "[can][sequence_detector][rules]") {
+TEST_CASE("uds_request_response - positive response completes", "[can][sequence_detector][rules]") {
     auto rule = rules::uds_request_response(0x7E0, 0x7E8, 0x10, "UDS DiagSession");
 
     c_sequence_detector detector;
@@ -429,7 +429,7 @@ TEST_CASE("uds_request_response — positive response completes", "[can][sequenc
     REQUIRE(found_completed);
 }
 
-TEST_CASE("uds_request_response — negative response also completes", "[can][sequence_detector][rules]") {
+TEST_CASE("uds_request_response - negative response also completes", "[can][sequence_detector][rules]") {
     auto rule = rules::uds_request_response(0x7E0, 0x7E8, 0x10);
 
     c_sequence_detector detector;
@@ -454,7 +454,7 @@ TEST_CASE("uds_request_response — negative response also completes", "[can][se
     REQUIRE(found_completed);
 }
 
-TEST_CASE("uds_security_access — full handshake completes", "[can][sequence_detector][rules]") {
+TEST_CASE("uds_security_access - full handshake completes", "[can][sequence_detector][rules]") {
     auto rule = rules::uds_security_access(0x7E0, 0x7E8, 0x01);
 
     c_sequence_detector detector;
@@ -483,7 +483,7 @@ TEST_CASE("uds_security_access — full handshake completes", "[can][sequence_de
     REQUIRE(found_completed);
 }
 
-TEST_CASE("uds_security_access — timeout on seed response", "[can][sequence_detector][rules]") {
+TEST_CASE("uds_security_access - timeout on seed response", "[can][sequence_detector][rules]") {
     auto rule = rules::uds_security_access(0x7E0, 0x7E8, 0x01);
 
     c_sequence_detector detector;
@@ -510,7 +510,7 @@ TEST_CASE("uds_security_access — timeout on seed response", "[can][sequence_de
     REQUIRE(found_timeout);
 }
 
-TEST_CASE("canopen_nmt_bootup — NMT start + bootup completes", "[can][sequence_detector][rules]") {
+TEST_CASE("canopen_nmt_bootup - NMT start + bootup completes", "[can][sequence_detector][rules]") {
     auto rule = rules::canopen_nmt_bootup(0x05);
 
     c_sequence_detector detector;
@@ -535,7 +535,7 @@ TEST_CASE("canopen_nmt_bootup — NMT start + bootup completes", "[can][sequence
     REQUIRE(found_completed);
 }
 
-TEST_CASE("canopen_sdo_upload — request + response completes", "[can][sequence_detector][rules]") {
+TEST_CASE("canopen_sdo_upload - request + response completes", "[can][sequence_detector][rules]") {
     auto rule = rules::canopen_sdo_upload(0x01, 0x1018, 0x01);
 
     c_sequence_detector detector;
