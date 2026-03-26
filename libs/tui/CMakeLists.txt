@@ -3,6 +3,7 @@
 # =============================================================================
 add_library(interface_tui STATIC
     src/app.cpp
+    src/keybindings.cpp
 )
 add_library(interface::tui ALIAS interface_tui)
 
@@ -18,6 +19,7 @@ target_link_libraries(interface_tui
         ftxui::screen
         ftxui::dom
         ftxui::component
+        nlohmann_json::nlohmann_json
 )
 
 # Conditionally link available modules so the TUI can adapt

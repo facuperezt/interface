@@ -32,6 +32,7 @@ All examples assume:
 17. [CANopen — Heartbeat Consumer](#17-canopen--heartbeat-consumer)
 18. [CANopen — EMCY Consumer](#18-canopen--emcy-consumer)
 19. [TUI Application](#19-tui-application)
+20. [Customizable Keyboard Shortcuts](#20-customizable-keyboard-shortcuts)
 
 ---
 
@@ -1315,15 +1316,164 @@ Tab-based terminal UI shell built with FTXUI. Provides four tabs: Trace Viewer, 
 using namespace interface::tui;
 
 int main() {
+    // Simple usage with free function (backward compatible):
     c_app_config config{};
     config.title = "interface";
     config.show_status_bar = true;
 
-    return run(config); // Blocks until user exits (Ctrl+C or 'q')
+    return run(config); // Blocks until user exits
+
+    // Or use the c_app class for more control:
+    c_app app(config);
+    app.load_keybindings("~/.config/interface/keybindings.json");
+    return app.run();
 }
 ```
 
-The TUI runs in fullscreen terminal mode with keyboard navigation between tabs.
+The TUI runs in fullscreen terminal mode with keyboard navigation between tabs. See section 20 for customizable keyboard shortcuts.
+
+---
+
+## 20. Customizable Keyboard Shortcuts
+
+**Headers:**
+- `interface/tui/keybindings.hpp`
+- `interface/tui/app.hpp`
+
+The keybindings system lets users remap any keyboard shortcut via a JSON config file. It provides sensible defaults that follow standard TUI conventions.
+
+### Config File Format
+
+Create a JSON file with a `version` field and a `bindings` object mapping action names to key combo strings. Only listed bindings override defaults -- omitted actions keep their default keys.
+
+```json
+{
+    "version": 1,
+    "bindings": {
+        "quit": "Ctrl+Q",
+        "next_tab": "Tab",
+        "prev_tab": "Shift+Tab",
+        "search": "Ctrl+F",
+        "scroll_up": "k",
+        "scroll_down": "j",
+        "toggle_hex_dec": "h",
+        "export_data": "Ctrl+E"
+    }
+}
+```
+
+Key combo strings support modifiers `Ctrl+`, `Alt+`, `Shift+` followed by a key name. Keys include single characters (`a`, `Q`, `1`), function keys (`F1`-`F12`), and named keys (`Tab`, `Enter`, `Escape`, `Space`, `Up`, `Down`, `Left`, `Right`, `PgUp`, `PgDn`, `Home`, `End`, `Backspace`, `Delete`).
+
+### All Bindable Actions with Defaults
+
+| Category          | Action            | Default Key    |
+|-------------------|-------------------|----------------|
+| Navigation        | `next_tab`        | `Tab`          |
+| Navigation        | `prev_tab`        | `Shift+Tab`    |
+| Navigation        | `tab_1`           | `1`            |
+| Navigation        | `tab_2`           | `2`            |
+| Navigation        | `tab_3`           | `3`            |
+| Navigation        | `tab_4`           | `4`            |
+| Navigation        | `tab_5`           | `5`            |
+| General           | `quit`            | `Ctrl+Q`       |
+| General           | `help`            | `F1`           |
+| General           | `toggle_focus`    | `F2`           |
+| Trace Viewer      | `scroll_up`       | `k`            |
+| Trace Viewer      | `scroll_down`     | `j`            |
+| Trace Viewer      | `page_up`         | `PgUp`         |
+| Trace Viewer      | `page_down`       | `PgDn`         |
+| Trace Viewer      | `go_to_top`       | `g`            |
+| Trace Viewer      | `go_to_bottom`    | `Shift+G`      |
+| Trace Viewer      | `search`          | `Ctrl+F`       |
+| Trace Viewer      | `filter`          | `f`            |
+| Trace Viewer      | `clear_filter`    | `Escape`       |
+| UDS Console       | `send_request`    | `Enter`        |
+| UDS Console       | `clear_console`   | `Ctrl+L`       |
+| UDS Console       | `history_prev`    | `Up`           |
+| UDS Console       | `history_next`    | `Down`         |
+| CANopen           | `refresh_od`      | `r`            |
+| CANopen           | `start_node`      | `s`            |
+| CANopen           | `stop_node`       | `Shift+S`      |
+| Common            | `copy`            | `Ctrl+C`       |
+| Common            | `export_data`     | `Ctrl+E`       |
+| Common            | `toggle_pause`    | `Space`        |
+| Common            | `toggle_hex_dec`  | `h`            |
+| Sequence Detector | `add_rule`        | `a`            |
+| Sequence Detector | `remove_rule`     | `d`            |
+| Sequence Detector | `reset_detector`  | `Ctrl+R`       |
+
+### Loading Custom Keybindings in Code
+
+```cpp
+#include "interface/tui/keybindings.hpp"
+#include "interface/tui/app.hpp"
+
+using namespace interface::tui;
+
+int main() {
+    c_app app;
+
+    // Load user overrides (merges with defaults).
+    auto result = app.load_keybindings("keybindings.json");
+    if (!result) {
+        std::cerr << "Warning: " << result.error().message << "\n";
+        // Defaults are still active.
+    }
+
+    return app.run();
+}
+```
+
+### Programmatic Keybinding Management
+
+```cpp
+#include "interface/tui/keybindings.hpp"
+
+using namespace interface::tui;
+
+c_keybindings kb; // populated with defaults
+
+// Query current bindings
+auto quit_combo = kb.combo_for(e_action::quit);       // Ctrl+Q
+auto display    = kb.display_string(e_action::quit);   // "Ctrl+Q"
+auto name       = c_keybindings::action_name(e_action::quit);     // "quit"
+auto category   = c_keybindings::action_category(e_action::quit); // "General"
+
+// Override a binding
+kb.bind(e_action::quit, c_key_combo{"W", true}); // Now Ctrl+W
+
+// Unbind and restore
+kb.unbind(e_action::quit);
+kb.reset_defaults();
+
+// Enumerate all bindings (e.g., for a help screen)
+for (const auto& [action, combo] : kb.all_bindings()) {
+    std::cout << c_keybindings::action_name(action) << " = "
+              << combo.to_string() << "\n";
+}
+
+// Save / load
+kb.save_to_file("my_keybindings.json");
+kb.load_from_file("my_keybindings.json");
+```
+
+### Example: Remapping Vim-style to Arrow-style Navigation
+
+```json
+{
+    "version": 1,
+    "bindings": {
+        "scroll_up": "Up",
+        "scroll_down": "Down",
+        "go_to_top": "Home",
+        "go_to_bottom": "End",
+        "history_prev": "Ctrl+Up",
+        "history_next": "Ctrl+Down"
+    }
+}
+```
+
+This replaces the default `j`/`k` Vim-style scrolling with arrow keys and maps go-to-top/bottom to Home/End. All other bindings remain at their defaults.
 
 ---
 
