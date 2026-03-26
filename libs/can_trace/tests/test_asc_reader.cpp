@@ -50,43 +50,44 @@ no internal events logged
 )";
 
     auto path = write_temp_file("test_basic.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    // Frame 1
-    auto r1 = reader.read_next();
-    REQUIRE(r1.has_value());
-    REQUIRE(r1->has_value());
-    auto& f1 = r1->value();
-    REQUIRE(f1.id == 0x100);
-    REQUIRE(f1.dlc == 8);
-    REQUIRE(f1.data[0] == 0x01);
-    REQUIRE(f1.data[7] == 0x08);
-    REQUIRE_THAT(static_cast<double>(f1.timestamp) / 1'000'000.0, WithinAbs(0.0001, 0.00001));
+        // Frame 1
+        auto r1 = reader.read_next();
+        REQUIRE(r1.has_value());
+        REQUIRE(r1->has_value());
+        auto& f1 = r1->value();
+        REQUIRE(f1.id == 0x100);
+        REQUIRE(f1.dlc == 8);
+        REQUIRE(f1.data[0] == 0x01);
+        REQUIRE(f1.data[7] == 0x08);
+        REQUIRE_THAT(static_cast<double>(f1.timestamp) / 1'000'000.0, WithinAbs(0.0001, 0.00001));
 
-    // Frame 2
-    auto r2 = reader.read_next();
-    REQUIRE(r2.has_value());
-    REQUIRE(r2->has_value());
-    auto& f2 = r2->value();
-    REQUIRE(f2.id == 0x200);
-    REQUIRE(f2.dlc == 4);
-    REQUIRE(f2.data[0] == 0xAA);
-    REQUIRE(f2.data[3] == 0xDD);
+        // Frame 2
+        auto r2 = reader.read_next();
+        REQUIRE(r2.has_value());
+        REQUIRE(r2->has_value());
+        auto& f2 = r2->value();
+        REQUIRE(f2.id == 0x200);
+        REQUIRE(f2.dlc == 4);
+        REQUIRE(f2.data[0] == 0xAA);
+        REQUIRE(f2.data[3] == 0xDD);
 
-    // Frame 3
-    auto r3 = reader.read_next();
-    REQUIRE(r3.has_value());
-    REQUIRE(r3->has_value());
-    auto& f3 = r3->value();
-    REQUIRE(f3.id == 0x1FF);
-    REQUIRE(f3.dlc == 2);
+        // Frame 3
+        auto r3 = reader.read_next();
+        REQUIRE(r3.has_value());
+        REQUIRE(r3->has_value());
+        auto& f3 = r3->value();
+        REQUIRE(f3.id == 0x1FF);
+        REQUIRE(f3.dlc == 2);
 
-    // EOF
-    auto r4 = reader.read_next();
-    REQUIRE(r4.has_value());
-    REQUIRE_FALSE(r4->has_value());
-
+        // EOF
+        auto r4 = reader.read_next();
+        REQUIRE(r4.has_value());
+        REQUIRE_FALSE(r4->has_value());
+    }
     std::filesystem::remove(path);
 }
 
@@ -99,16 +100,17 @@ base hex timestamps absolute
 )";
 
     auto path = write_temp_file("test_read_all.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 3);
-    REQUIRE(result->at(0).id == 0x100);
-    REQUIRE(result->at(1).id == 0x200);
-    REQUIRE(result->at(2).id == 0x300);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 3);
+        REQUIRE(result->at(0).id == 0x100);
+        REQUIRE(result->at(1).id == 0x200);
+        REQUIRE(result->at(2).id == 0x300);
+    }
     std::filesystem::remove(path);
 }
 
@@ -121,13 +123,14 @@ TEST_CASE("ASC reader skips comment lines", "[can_trace][asc]") {
 )";
 
     auto path = write_temp_file("test_comments.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 2);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 2);
+    }
     std::filesystem::remove(path);
 }
 
@@ -137,18 +140,19 @@ TEST_CASE("ASC reader info tracks metadata", "[can_trace][asc]") {
 )";
 
     auto path = write_temp_file("test_info.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
 
-    auto info = reader.info();
-    REQUIRE(info.format == "ASC");
-    REQUIRE(info.frame_count == 2);
-    REQUIRE(info.start_time == 1000);  // 0.001s = 1000us
-    REQUIRE(info.end_time == 50000);   // 0.050s = 50000us
-
+        auto info = reader.info();
+        REQUIRE(info.format == "ASC");
+        REQUIRE(info.frame_count == 2);
+        REQUIRE(info.start_time == 1000);  // 0.001s = 1000us
+        REQUIRE(info.end_time == 50000);   // 0.050s = 50000us
+    }
     std::filesystem::remove(path);
 }
 
@@ -156,17 +160,18 @@ TEST_CASE("ASC reader reset re-reads from beginning", "[can_trace][asc]") {
     auto content = "   0.001000 1  100             Rx   d 1 AA\n";
 
     auto path = write_temp_file("test_reset.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto r1 = reader.read_all();
-    REQUIRE(r1.has_value());
-    REQUIRE(r1->size() == 1);
+        auto r1 = reader.read_all();
+        REQUIRE(r1.has_value());
+        REQUIRE(r1->size() == 1);
 
-    auto r2 = reader.read_all();
-    REQUIRE(r2.has_value());
-    REQUIRE(r2->size() == 1);
-
+        auto r2 = reader.read_all();
+        REQUIRE(r2.has_value());
+        REQUIRE(r2->size() == 1);
+    }
     std::filesystem::remove(path);
 }
 
@@ -174,14 +179,15 @@ TEST_CASE("ASC reader handles extended IDs", "[can_trace][asc]") {
     auto content = "   0.001000 1  1ABCDEF0x       Rx   d 2 01 02\n";
 
     auto path = write_temp_file("test_ext.asc", content);
-    c_asc_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_asc_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto r = reader.read_next();
-    REQUIRE(r.has_value());
-    REQUIRE(r->has_value());
-    REQUIRE(r->value().id == 0x1ABCDEF0);
-    REQUIRE(r->value().flags.extended);
-
+        auto r = reader.read_next();
+        REQUIRE(r.has_value());
+        REQUIRE(r->has_value());
+        REQUIRE(r->value().id == 0x1ABCDEF0);
+        REQUIRE(r->value().flags.extended);
+    }
     std::filesystem::remove(path);
 }

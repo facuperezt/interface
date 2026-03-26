@@ -46,28 +46,29 @@ TEST_CASE("CSV reader parses basic comma-delimited data", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_basic.csv", content);
-    c_csv_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 3);
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 3);
 
-    auto& f1 = result->at(0);
-    REQUIRE(f1.id == 0x100);
-    REQUIRE(f1.dlc == 8);
-    REQUIRE(f1.data[0] == 0x01);
-    REQUIRE(f1.data[7] == 0x08);
+        auto& f1 = result->at(0);
+        REQUIRE(f1.id == 0x100);
+        REQUIRE(f1.dlc == 8);
+        REQUIRE(f1.data[0] == 0x01);
+        REQUIRE(f1.data[7] == 0x08);
 
-    auto& f2 = result->at(1);
-    REQUIRE(f2.id == 0x200);
-    REQUIRE(f2.dlc == 4);
-    REQUIRE(f2.data[0] == 0xAA);
+        auto& f2 = result->at(1);
+        REQUIRE(f2.id == 0x200);
+        REQUIRE(f2.dlc == 4);
+        REQUIRE(f2.data[0] == 0xAA);
 
-    auto& f3 = result->at(2);
-    REQUIRE(f3.id == 0x1FF);
-    REQUIRE(f3.dlc == 2);
-
+        auto& f3 = result->at(2);
+        REQUIRE(f3.id == 0x1FF);
+        REQUIRE(f3.dlc == 2);
+    }
     std::filesystem::remove(path);
 }
 
@@ -78,16 +79,17 @@ TEST_CASE("CSV reader with semicolon delimiter", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_semicolon.csv", content);
-    c_csv_column_config cfg{.delimiter = ';'};
-    c_csv_reader reader(cfg);
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_column_config cfg{.delimiter = ';'};
+        c_csv_reader reader(cfg);
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 2);
-    REQUIRE(result->at(0).id == 0x100);
-    REQUIRE(result->at(0).data[0] == 0xAB);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 2);
+        REQUIRE(result->at(0).id == 0x100);
+        REQUIRE(result->at(0).data[0] == 0xAB);
+    }
     std::filesystem::remove(path);
 }
 
@@ -98,19 +100,20 @@ TEST_CASE("CSV reader with separate data columns", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_separate_cols.csv", content);
-    c_csv_column_config cfg{
-        .data_in_single_column = false,
-    };
-    c_csv_reader reader(cfg);
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_column_config cfg{
+            .data_in_single_column = false,
+        };
+        c_csv_reader reader(cfg);
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 2);
-    REQUIRE(result->at(0).data[0] == 0xAA);
-    REQUIRE(result->at(0).data[1] == 0xBB);
-    REQUIRE(result->at(0).data[2] == 0xCC);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 2);
+        REQUIRE(result->at(0).data[0] == 0xAA);
+        REQUIRE(result->at(0).data[1] == 0xBB);
+        REQUIRE(result->at(0).data[2] == 0xCC);
+    }
     std::filesystem::remove(path);
 }
 
@@ -120,14 +123,15 @@ TEST_CASE("CSV reader with no header", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_no_header.csv", content);
-    c_csv_column_config cfg{.has_header = false};
-    c_csv_reader reader(cfg);
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_column_config cfg{.has_header = false};
+        c_csv_reader reader(cfg);
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 2);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 2);
+    }
     std::filesystem::remove(path);
 }
 
@@ -137,14 +141,15 @@ TEST_CASE("CSV reader with hex prefix IDs", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_hex_prefix.csv", content);
-    c_csv_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
-    REQUIRE(result->size() == 1);
-    REQUIRE(result->at(0).id == 0x1AB);
-
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
+        REQUIRE(result->size() == 1);
+        REQUIRE(result->at(0).id == 0x1AB);
+    }
     std::filesystem::remove(path);
 }
 
@@ -154,17 +159,18 @@ TEST_CASE("CSV reader reset works", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_csv_reset.csv", content);
-    c_csv_reader reader;
-    REQUIRE(reader.open(path).has_value());
+    {
+        c_csv_reader reader;
+        REQUIRE(reader.open(path).has_value());
 
-    auto r1 = reader.read_all();
-    REQUIRE(r1.has_value());
-    REQUIRE(r1->size() == 1);
+        auto r1 = reader.read_all();
+        REQUIRE(r1.has_value());
+        REQUIRE(r1->size() == 1);
 
-    auto r2 = reader.read_all();
-    REQUIRE(r2.has_value());
-    REQUIRE(r2->size() == 1);
-
+        auto r2 = reader.read_all();
+        REQUIRE(r2.has_value());
+        REQUIRE(r2->size() == 1);
+    }
     std::filesystem::remove(path);
 }
 
@@ -175,14 +181,15 @@ TEST_CASE("CSV reader info metadata", "[can_trace][csv]") {
 )";
 
     auto path = write_temp_file("test_csv_info.csv", content);
-    c_csv_reader reader;
-    REQUIRE(reader.open(path).has_value());
-    auto result = reader.read_all();
-    REQUIRE(result.has_value());
+    {
+        c_csv_reader reader;
+        REQUIRE(reader.open(path).has_value());
+        auto result = reader.read_all();
+        REQUIRE(result.has_value());
 
-    auto info = reader.info();
-    REQUIRE(info.format == "CSV");
-    REQUIRE(info.frame_count == 2);
-
+        auto info = reader.info();
+        REQUIRE(info.format == "CSV");
+        REQUIRE(info.frame_count == 2);
+    }
     std::filesystem::remove(path);
 }
