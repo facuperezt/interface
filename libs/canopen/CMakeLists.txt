@@ -7,6 +7,8 @@ add_library(interface_canopen STATIC
     src/pdo.cpp
     src/sdo_client.cpp
     src/c_eds_parser.cpp
+    src/heartbeat_consumer.cpp
+    src/emcy_consumer.cpp
 )
 add_library(interface::canopen ALIAS interface_canopen)
 

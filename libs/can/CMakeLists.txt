@@ -3,6 +3,8 @@
 # =============================================================================
 add_library(interface_can STATIC
     src/can.cpp
+    src/statistics.cpp
+    src/dispatcher.cpp
 )
 add_library(interface::can ALIAS interface_can)
 

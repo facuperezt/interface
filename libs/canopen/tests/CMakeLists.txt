@@ -4,6 +4,8 @@ add_executable(test_canopen
     test_pdo.cpp
     test_eds_parser.cpp
     test_sdo_client.cpp
+    test_heartbeat_consumer.cpp
+    test_emcy_consumer.cpp
 )
 
 target_link_libraries(test_canopen

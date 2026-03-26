@@ -5,6 +5,9 @@ add_library(interface_can_trace STATIC
     src/trace.cpp
     src/c_asc_reader.cpp
     src/c_csv_reader.cpp
+    src/c_asc_writer.cpp
+    src/c_csv_writer.cpp
+    src/c_trace_replayer.cpp
 )
 add_library(interface::can_trace ALIAS interface_can_trace)
 
@@ -17,6 +20,7 @@ target_include_directories(interface_can_trace
 target_link_libraries(interface_can_trace
     PUBLIC
         interface::can
+        interface::can_hal
         interface::core
 )
 

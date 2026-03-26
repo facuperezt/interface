@@ -1,6 +1,8 @@
 add_executable(test_can
     test_frame.cpp
     test_filter.cpp
+    test_statistics.cpp
+    test_dispatcher.cpp
 )
 
 target_link_libraries(test_can
