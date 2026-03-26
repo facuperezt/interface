@@ -5,6 +5,7 @@ add_library(interface_can STATIC
     src/can.cpp
     src/statistics.cpp
     src/dispatcher.cpp
+    src/sequence_detector.cpp
 )
 add_library(interface::can ALIAS interface_can)
 

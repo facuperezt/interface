@@ -3,6 +3,7 @@ add_executable(test_can
     test_filter.cpp
     test_statistics.cpp
     test_dispatcher.cpp
+    test_sequence_detector.cpp
 )
 
 target_link_libraries(test_can
