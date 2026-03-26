@@ -1,0 +1,31 @@
+# Build directories
+build/
+install/
+out/
+
+# CMake generated
+CMakeUserPresets.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compilation database (keep compile_commands.json if committed)
+# compile_commands.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Binaries
+*.exe
+*.out
+*.app
+*.o
+*.a
+*.so
+*.dylib
+*.dll
