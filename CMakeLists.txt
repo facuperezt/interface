@@ -57,6 +57,10 @@ if(INTERFACE_ENABLE_CAN_TRACE)
     add_subdirectory(libs/can_trace)
 endif()
 
+if(INTERFACE_ENABLE_CAN_SCRIPT)
+    add_subdirectory(libs/can_script)
+endif()
+
 if(INTERFACE_ENABLE_UDS)
     add_subdirectory(libs/uds)
 endif()

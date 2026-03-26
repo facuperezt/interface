@@ -33,6 +33,7 @@ All examples assume:
 18. [CANopen — EMCY Consumer](#18-canopen--emcy-consumer)
 19. [TUI Application](#19-tui-application)
 20. [Customizable Keyboard Shortcuts](#20-customizable-keyboard-shortcuts)
+21. [CAN Scripting Engine](#21-can-scripting-engine)
 
 ---
 
@@ -1545,3 +1546,298 @@ int main() {
     return 0;
 }
 ```
+
+---
+
+## 21. CAN Scripting Engine
+
+**Headers:**
+- `interface/can_script/script.hpp`
+- `interface/can_script/script_engine.hpp`
+
+**Dependencies:**
+- `interface::can` (frame types)
+- `interface::can_hal` (adapter for send/receive)
+- `interface::core` (error handling)
+- `nlohmann_json` (JSON parsing)
+
+The CAN scripting engine lets you define "CAN scripts" in JSON to simulate CAN bus participants (e.g., a CANopen node, a UDS server, an ECU). Scripts define message sequences with configurable timing, conditional triggers, and multi-frame support.
+
+### JSON Script Format
+
+Scripts are JSON files with a name, optional description, loop flag, and an array of steps:
+
+```json
+{
+    "name": "My CAN Script",
+    "description": "Optional description",
+    "loop": false,
+    "steps": [
+        {
+            "label": "step_name",
+            "trigger": { ... },
+            "action": { ... },
+            "repeat": false,
+            "repeat_count": 0,
+            "on_timeout_goto": "",
+            "on_match_goto": ""
+        }
+    ]
+}
+```
+
+### Trigger Types
+
+| Type | Description | JSON Fields |
+|------|-------------|-------------|
+| `immediate` | Execute immediately | `{"type": "immediate"}` |
+| `delay` | Wait a fixed duration | `{"type": "delay", "delay_ms": 500}` |
+| `on_receive` | Wait for a matching CAN frame | `{"type": "on_receive", "match": {...}}` |
+| `on_receive_or_timeout` | Wait for frame or timeout | `{"type": "on_receive_or_timeout", "match": {...}, "timeout_ms": 5000}` |
+
+### Frame Matching
+
+Match rules use CAN ID filtering and byte-level payload matchers:
+
+```json
+"match": {
+    "id": "0x7E0",
+    "id_mask": "0x1FFFFFFF",
+    "payload": [
+        {"type": "exact", "value": "0x10"},
+        {"type": "masked", "value": "0xA0", "mask": "0xF0"},
+        {"type": "range", "low": "0x01", "high": "0x0F"},
+        {"type": "any"}
+    ]
+}
+```
+
+Byte matcher types: `exact` (exact value), `masked` (value & mask match), `range` (inclusive range), `any` (match all).
+
+### Action Types
+
+| Type | Description | JSON Fields |
+|------|-------------|-------------|
+| `send_frame` | Send one CAN frame | `{"type": "send_frame", "frame": {...}}` |
+| `send_sequence` | Send multiple frames | `{"type": "send_sequence", "sequence": [...]}` |
+| `log_message` | Log a message | `{"type": "log_message", "message": "..."}` |
+| `set_variable` | Set a script variable | `{"type": "set_variable", "variable_name": "...", "variable_value": "..."}` |
+| `no_op` | Do nothing | `{"type": "no_op"}` |
+
+Frame data accepts hex strings (`"0xFF"`) or integers.
+
+### Flow Control
+
+- **`repeat`**: Re-arm the step's trigger after execution
+- **`repeat_count`**: Limit repetitions (0 = infinite)
+- **`on_timeout_goto`**: Jump to a labeled step on timeout
+- **`on_match_goto`**: Jump to a labeled step on match
+
+### Loading and Running a Script
+
+```cpp
+#include "interface/can_script/script.hpp"
+#include "interface/can_script/script_engine.hpp"
+#include "interface/can_hal/c_mock_adapter.hpp"
+
+using namespace interface;
+using namespace interface::can_script;
+using namespace interface::can_hal;
+
+int main() {
+    // Load script from file
+    auto script = c_script::load_from_file("my_script.json");
+    if (!script) {
+        std::cerr << "Error: " << script.error().message << "\n";
+        return 1;
+    }
+
+    // Create adapter and engine
+    auto adapter = std::make_shared<c_mock_adapter>();
+    adapter->open(c_bitrate_config{.nominal_bps = 500000});
+
+    c_script_engine engine(adapter);
+    engine.load_script(std::move(*script));
+
+    // Set event callback for monitoring
+    engine.set_event_callback([](const c_engine_event& event) {
+        std::cout << "[" << event.timestamp << "] " << event.message << "\n";
+    });
+
+    // Start and run the engine loop
+    engine.start();
+
+    timestamp_us_t time = 0;
+    while (engine.state() == e_engine_state::running) {
+        // In a real application, feed received frames:
+        // engine.on_frame_received(received_frame);
+
+        engine.process(time);
+        time += 1000; // advance 1ms
+    }
+
+    // Check event log
+    for (const auto& event : engine.event_log()) {
+        std::cout << event.message << "\n";
+    }
+
+    return 0;
+}
+```
+
+### Creating Scripts Programmatically
+
+```cpp
+#include "interface/can_script/script.hpp"
+
+using namespace interface::can_script;
+
+c_script script;
+script.name = "Heartbeat Sender";
+script.description = "Sends a heartbeat every second";
+script.loop = true;
+
+c_script_step step;
+step.label = "heartbeat";
+step.trigger_type = e_trigger_type::delay;
+step.delay = std::chrono::microseconds(1'000'000);
+step.action.type = e_action_type::send_frame;
+step.action.frame.id = 0x705;
+step.action.frame.dlc = 1;
+step.action.frame.data[0] = 0x05;
+step.repeat = true;
+
+script.steps.push_back(std::move(step));
+
+// Save to file
+script.save_to_file("heartbeat.json");
+```
+
+### Example: CANopen Node Simulator
+
+```json
+{
+    "name": "CANopen Node 5 Simulator",
+    "description": "Responds to NMT start and SDO upload requests",
+    "loop": false,
+    "steps": [
+        {
+            "label": "wait_for_nmt_start",
+            "trigger": {
+                "type": "on_receive",
+                "match": {
+                    "id": "0x000",
+                    "payload": [
+                        {"type": "exact", "value": "0x01"},
+                        {"type": "exact", "value": "0x05"}
+                    ]
+                }
+            },
+            "action": {
+                "type": "send_frame",
+                "frame": {"id": "0x705", "dlc": 1, "data": ["0x00"]}
+            }
+        },
+        {
+            "label": "sdo_upload_response",
+            "trigger": {
+                "type": "on_receive",
+                "match": {
+                    "id": "0x605",
+                    "payload": [
+                        {"type": "exact", "value": "0x40"},
+                        {"type": "exact", "value": "0x18"},
+                        {"type": "exact", "value": "0x10"},
+                        {"type": "exact", "value": "0x01"}
+                    ]
+                }
+            },
+            "action": {
+                "type": "send_frame",
+                "frame": {
+                    "id": "0x585",
+                    "dlc": 8,
+                    "data": ["0x43", "0x18", "0x10", "0x01", "0xAB", "0xCD", "0xEF", "0x01"]
+                }
+            },
+            "repeat": true
+        }
+    ]
+}
+```
+
+### Example: UDS Server Simulator
+
+```json
+{
+    "name": "UDS Server Simulator",
+    "description": "Responds to DiagSession and ReadByIdentifier",
+    "loop": false,
+    "steps": [
+        {
+            "label": "diag_session",
+            "trigger": {
+                "type": "on_receive",
+                "match": {
+                    "id": "0x7E0",
+                    "payload": [{"type": "exact", "value": "0x10"}]
+                }
+            },
+            "action": {
+                "type": "send_frame",
+                "frame": {
+                    "id": "0x7E8",
+                    "dlc": 6,
+                    "data": ["0x50", "0x01", "0x00", "0x32", "0x01", "0xF4"]
+                }
+            }
+        },
+        {
+            "label": "read_by_id_multiframe",
+            "trigger": {
+                "type": "on_receive",
+                "match": {
+                    "id": "0x7E0",
+                    "payload": [{"type": "exact", "value": "0x22"}]
+                }
+            },
+            "action": {
+                "type": "send_sequence",
+                "sequence": [
+                    {"delay_ms": 0,  "frame": {"id": "0x7E8", "dlc": 8, "data": ["0x10", "0x14", "0x62", "0xF1", "0x90", "0x57", "0x30", "0x4C"]}},
+                    {"delay_ms": 5,  "frame": {"id": "0x7E8", "dlc": 8, "data": ["0x21", "0x5A", "0x4E", "0x44", "0x41", "0x31", "0x32", "0x33"]}},
+                    {"delay_ms": 5,  "frame": {"id": "0x7E8", "dlc": 8, "data": ["0x22", "0x34", "0x35", "0x36", "0x37", "0x38", "0x39", "0x30"]}}
+                ]
+            },
+            "repeat": true
+        }
+    ]
+}
+```
+
+### Example: Multi-frame ISO-TP Response
+
+```json
+{
+    "name": "ISO-TP Multi-frame Response",
+    "description": "Simulates a segmented ISO-TP transfer",
+    "steps": [
+        {
+            "label": "wait_request",
+            "trigger": {
+                "type": "on_receive_or_timeout",
+                "match": {"id": "0x7E0"},
+                "timeout_ms": 10000
+            },
+            "action": {
+                "type": "send_sequence",
+                "sequence": [
+                    {"delay_ms": 0, "frame": {"id": "0x7E8", "dlc": 8, "data": ["0x10", "0x0A", "0x62", "0xF1", "0x90", "0x41", "0x42", "0x43"]}},
+                    {"delay_ms": 5, "frame": {"id": "0x7E8", "dlc": 8, "data": ["0x21", "0x44", "0x45", "0x46", "0x00", "0x00", "0x00", "0x00"]}}
+                ]
+            },
+            "on_timeout_goto": "wait_request",
+            "repeat": true
+        }
+    ]
+}
