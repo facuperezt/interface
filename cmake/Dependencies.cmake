@@ -10,6 +10,11 @@ include(FetchContent)
 # ---------------------------------------------------------------------------
 # spdlog — structured logging (always needed by core)
 # ---------------------------------------------------------------------------
+# Use spdlog in header-only mode to avoid ABI issues between different
+# compiler/stdlib combinations (e.g., Clang 17 with GCC 14 libstdc++).
+# Mark as SYSTEM includes to suppress warnings from spdlog headers.
+set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(SPDLOG_SYSTEM_INCLUDES ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
@@ -20,6 +25,7 @@ FetchContent_Declare(
 # ---------------------------------------------------------------------------
 # nlohmann/json — JSON serialization (used by core, config, etc.)
 # ---------------------------------------------------------------------------
+set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
@@ -31,6 +37,9 @@ FetchContent_Declare(
 # FTXUI — terminal UI framework (only if TUI enabled)
 # ---------------------------------------------------------------------------
 if(INTERFACE_ENABLE_TUI)
+    set(FTXUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(FTXUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(FTXUI_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(
         ftxui
         GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
@@ -53,15 +62,23 @@ endif()
 
 # ---------------------------------------------------------------------------
 # dbcppp — DBC parser base (only if CAN DB enabled)
+# NOTE: dbcppp integration is declared but not yet made available.
+# It will be enabled when the DBC parser wrapper is implemented.
+# The library has dependencies (LibXml2 for KCD, Boost) that require
+# careful handling across platforms.
 # ---------------------------------------------------------------------------
-if(INTERFACE_ENABLE_CAN_DB)
-    FetchContent_Declare(
-        dbcppp
-        GIT_REPOSITORY https://github.com/xR3b0rn/dbcppp.git
-        GIT_TAG        master
-        GIT_SHALLOW    TRUE
-    )
-endif()
+# if(INTERFACE_ENABLE_CAN_DB)
+#     set(build_kcd OFF CACHE BOOL "" FORCE)
+#     set(build_tools OFF CACHE BOOL "" FORCE)
+#     set(build_tests OFF CACHE BOOL "" FORCE)
+#     set(build_examples OFF CACHE BOOL "" FORCE)
+#     FetchContent_Declare(
+#         dbcppp
+#         GIT_REPOSITORY https://github.com/xR3b0rn/dbcppp.git
+#         GIT_TAG        master
+#         GIT_SHALLOW    TRUE
+#     )
+# endif()
 
 # ---------------------------------------------------------------------------
 # Make available
@@ -81,8 +98,9 @@ if(INTERFACE_ENABLE_TESTING)
     include(Catch)
 endif()
 
-if(INTERFACE_ENABLE_CAN_DB)
-    FetchContent_MakeAvailable(dbcppp)
-endif()
+# dbcppp: not yet made available (see note above)
+# if(INTERFACE_ENABLE_CAN_DB)
+#     FetchContent_MakeAvailable(dbcppp)
+# endif()
 
 message(STATUS "Dependencies ready")

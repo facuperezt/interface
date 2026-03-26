@@ -10,29 +10,32 @@ jobs:
   build-linux:
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
-        compiler: [gcc-13, clang-17]
+        include:
+          - compiler: gcc
+            cc: gcc-14
+            cxx: g++-14
+            packages: g++-14
+          - compiler: clang
+            cc: clang-18
+            cxx: clang++-18
+            packages: clang-18
+    name: Linux (${{ matrix.compiler }})
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
-          if [ "${{ matrix.compiler }}" = "gcc-13" ]; then
-            sudo apt-get install -y g++-13
-          else
-            sudo apt-get install -y clang-17
-          fi
+          sudo apt-get install -y cmake ninja-build ${{ matrix.packages }}
 
       - name: Configure
         run: |
-          if [ "${{ matrix.compiler }}" = "gcc-13" ]; then
-            export CXX=g++-13
-          else
-            export CXX=clang++-17
-          fi
-          cmake --preset full -DCMAKE_CXX_COMPILER=$CXX
+          cmake --preset full \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build
         run: cmake --build --preset full

@@ -15,7 +15,7 @@ target_include_directories(interface_core
 target_link_libraries(interface_core
     PUBLIC
         interface::compiler_flags
-        spdlog::spdlog
+        spdlog::spdlog_header_only
         nlohmann_json::nlohmann_json
 )
 

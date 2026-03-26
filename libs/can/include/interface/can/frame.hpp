@@ -37,7 +37,7 @@ struct c_can_frame {
 
     /// Effective data length (capped to DLC).
     [[nodiscard]] constexpr auto data_length() const noexcept -> std::size_t {
-        return static_cast<std::size_t>(dlc <= k_can_max_dlc ? dlc : k_can_max_dlc);
+        return dlc <= k_can_max_dlc ? static_cast<std::size_t>(dlc) : k_can_max_dlc;
     }
 
     /// Non-owning view of the payload.

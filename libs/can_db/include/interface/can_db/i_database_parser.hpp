@@ -4,6 +4,7 @@
 /// @brief Abstract interface for CAN database file parsers (.dbc, .eds, .cdd).
 
 #include "interface/core/error.hpp"
+#include "interface/core/types.hpp"
 
 #include <filesystem>
 #include <memory>
