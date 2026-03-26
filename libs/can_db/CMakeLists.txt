@@ -3,6 +3,7 @@
 # =============================================================================
 add_library(interface_can_db STATIC
     src/database.cpp
+    src/c_dbc_parser.cpp
 )
 add_library(interface::can_db ALIAS interface_can_db)
 

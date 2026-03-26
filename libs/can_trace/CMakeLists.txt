@@ -3,6 +3,8 @@
 # =============================================================================
 add_library(interface_can_trace STATIC
     src/trace.cpp
+    src/c_asc_reader.cpp
+    src/c_csv_reader.cpp
 )
 add_library(interface::can_trace ALIAS interface_can_trace)
 

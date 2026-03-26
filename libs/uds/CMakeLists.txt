@@ -3,6 +3,7 @@
 # =============================================================================
 add_library(interface_uds STATIC
     src/client.cpp
+    src/iso_tp.cpp
 )
 add_library(interface::uds ALIAS interface_uds)
 

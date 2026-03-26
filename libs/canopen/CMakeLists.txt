@@ -5,6 +5,8 @@ add_library(interface_canopen STATIC
     src/object_dictionary.cpp
     src/nmt.cpp
     src/pdo.cpp
+    src/sdo_client.cpp
+    src/c_eds_parser.cpp
 )
 add_library(interface::canopen ALIAS interface_canopen)
 
@@ -18,6 +20,7 @@ target_link_libraries(interface_canopen
     PUBLIC
         interface::can
         interface::can_db
+        interface::can_hal
         interface::core
 )
 

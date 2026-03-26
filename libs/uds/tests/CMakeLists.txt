@@ -1,6 +1,7 @@
 add_executable(test_uds
     test_client.cpp
     test_nrc.cpp
+    test_iso_tp.cpp
 )
 
 target_link_libraries(test_uds
