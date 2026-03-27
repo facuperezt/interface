@@ -94,19 +94,16 @@ auto c_app::run() -> int {
     auto screen = ScreenInteractive::Fullscreen();
 
     // Wrap with a CatchEvent to handle keybindings.
+    // Note: Tab/Shift+Tab are left to FTXUI's Toggle component so both the
+    // tab bar highlight AND the content pane update together. We only
+    // intercept non-Toggle shortcuts (quit, number keys) here.
     auto with_keybindings = CatchEvent(main_component, [&](Event event) -> bool {
         if (m_keybindings.matches(event, e_action::quit)) {
             screen.Exit();
             return true;
         }
-        if (m_keybindings.matches(event, e_action::next_tab)) {
-            selected_tab = (selected_tab + 1) % k_num_tabs;
-            return true;
-        }
-        if (m_keybindings.matches(event, e_action::prev_tab)) {
-            selected_tab = (selected_tab - 1 + k_num_tabs) % k_num_tabs;
-            return true;
-        }
+        // Number keys for direct tab selection -- Toggle reads selected_tab
+        // on next render, so just updating the variable is sufficient.
         if (m_keybindings.matches(event, e_action::tab_1)) {
             selected_tab = 0;
             return true;
@@ -123,6 +120,8 @@ auto c_app::run() -> int {
             selected_tab = 3;
             return true;
         }
+        // Let Tab/Shift+Tab fall through to FTXUI's Toggle so both the
+        // tab bar highlight and the content pane update in sync.
         return false;
     });
 
