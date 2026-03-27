@@ -1,5 +1,5 @@
 /// @file app.cpp
-/// @brief TUI application — tab-based layout with FTXUI.
+/// @brief TUI application -- tab-based layout with FTXUI.
 
 #include "interface/tui/app.hpp"
 #include "interface/core/version.hpp"
@@ -13,7 +13,22 @@
 
 namespace interface::tui {
 
-auto run(c_app_config config) -> int {
+// ---------------------------------------------------------------------------
+// c_app
+// ---------------------------------------------------------------------------
+
+c_app::c_app(c_app_config config) : m_config(std::move(config)) {}
+
+auto c_app::load_keybindings(const std::filesystem::path& path)
+    -> result_t<void> {
+    return m_keybindings.load_from_file(path);
+}
+
+auto c_app::keybindings() const -> const c_keybindings& {
+    return m_keybindings;
+}
+
+auto c_app::run() -> int {
     using namespace ftxui;
 
     // Tab state
@@ -24,6 +39,8 @@ auto run(c_app_config config) -> int {
         "UDS Console",
         "CANopen Explorer",
     };
+
+    constexpr int k_num_tabs = 4;
 
     auto tab_toggle = Toggle(&tab_names, &selected_tab);
 
@@ -74,14 +91,52 @@ auto run(c_app_config config) -> int {
         tab_content,
     });
 
-    auto renderer = Renderer(main_component, [&] {
-        auto status_text = std::string{"interface v"} + std::string{interface::k_version_string}
-                           + " | No adapter connected";
+    auto screen = ScreenInteractive::Fullscreen();
+
+    // Wrap with a CatchEvent to handle keybindings.
+    auto with_keybindings = CatchEvent(main_component, [&](Event event) -> bool {
+        if (m_keybindings.matches(event, e_action::quit)) {
+            screen.Exit();
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::next_tab)) {
+            selected_tab = (selected_tab + 1) % k_num_tabs;
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::prev_tab)) {
+            selected_tab = (selected_tab - 1 + k_num_tabs) % k_num_tabs;
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::tab_1)) {
+            selected_tab = 0;
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::tab_2)) {
+            selected_tab = 1;
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::tab_3)) {
+            selected_tab = 2;
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::tab_4)) {
+            selected_tab = 3;
+            return true;
+        }
+        return false;
+    });
+
+    auto renderer = Renderer(with_keybindings, [&] {
+        auto quit_key = m_keybindings.display_string(e_action::quit);
+        auto status_text = std::string{"interface v"}
+                           + std::string{interface::k_version_string}
+                           + " | No adapter connected"
+                           + " | " + quit_key + " quit";
 
         return vbox({
             // Header
             hbox({
-                text(config.title) | bold,
+                text(m_config.title) | bold,
                 filler(),
                 text(std::string{interface::k_version_string}) | dim,
             }) | color(Color::Cyan),
@@ -95,16 +150,23 @@ auto run(c_app_config config) -> int {
             tab_content->Render() | flex,
 
             // Status bar
-            config.show_status_bar
+            m_config.show_status_bar
                 ? (separator(), hbox({text(status_text) | dim}))
                 : text(""),
         }) | border;
     });
 
-    auto screen = ScreenInteractive::Fullscreen();
     screen.Loop(renderer);
-
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Convenience free function
+// ---------------------------------------------------------------------------
+
+auto run(c_app_config config) -> int {
+    c_app app(std::move(config));
+    return app.run();
 }
 
 } // namespace interface::tui

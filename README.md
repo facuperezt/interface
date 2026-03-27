@@ -27,6 +27,11 @@ Modern C++23 TUI tool collection for CAN bus analysis, UDS diagnostics, and CANo
 - **Mock Adapter** — Full-featured mock for testing (inject RX frames, inspect TX history)
 - **HAL Options** — Build toggles for PCAN, IXXAT, and SocketCAN backends
 
+### CAN Scripting Engine
+- **JSON-based CAN Scripts** — Define CAN bus simulations (CANopen nodes, UDS servers, ECUs) as JSON scripts with triggers, actions, and flow control
+- **Script Engine** — Execute scripts with immediate, delay, and receive-triggered steps, repeat/loop control, and goto-based branching
+- **Multi-frame Support** — Send sequences of frames with configurable inter-frame delays for ISO-TP and protocol simulation
+
 ### UDS (ISO 14229)
 - **UDS Client** — Session control, security access (seed/key), DID read/write, routine control, ECU reset, raw requests
 - **ISO-TP Transport** — Full ISO 15765-2 with Single Frame, First Frame, Consecutive Frame, and Flow Control

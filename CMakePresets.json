@@ -1,173 +1,177 @@
 {
-	"version": 6,
-	"cmakeMinimumRequired": {
-		"major": 3,
-		"minor": 25,
-		"patch": 0
-	},
-	"configurePresets": [
-		{
-			"name": "base",
-			"hidden": true,
-			"binaryDir": "${sourceDir}/build/${presetName}",
-			"installDir": "${sourceDir}/install/${presetName}",
-			"cacheVariables": {
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
 				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
 				"CMAKE_C_COMPILER": "gcc-13",
 				"CMAKE_CXX_COMPILER": "g++-13"
-			}
-		},
-		{
-			"name": "dev",
-			"displayName": "Development (Debug, all features, sanitizers)",
-			"inherits": "base",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"INTERFACE_ENABLE_CAN": "ON",
-				"INTERFACE_ENABLE_CAN_DB": "ON",
-				"INTERFACE_ENABLE_CAN_TRACE": "ON",
-				"INTERFACE_ENABLE_CAN_HAL": "ON",
-				"INTERFACE_ENABLE_UDS": "ON",
-				"INTERFACE_ENABLE_CANOPEN": "ON",
-				"INTERFACE_ENABLE_TUI": "ON",
-				"INTERFACE_ENABLE_TESTING": "ON",
-				"INTERFACE_ENABLE_SANITIZERS": "ON"
-			}
-		},
-		{
-			"name": "release",
-			"displayName": "Release (optimized, no tests)",
-			"inherits": "base",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"INTERFACE_ENABLE_CAN": "ON",
-				"INTERFACE_ENABLE_CAN_DB": "ON",
-				"INTERFACE_ENABLE_CAN_TRACE": "ON",
-				"INTERFACE_ENABLE_CAN_HAL": "ON",
-				"INTERFACE_ENABLE_UDS": "ON",
-				"INTERFACE_ENABLE_CANOPEN": "ON",
-				"INTERFACE_ENABLE_TUI": "ON",
-				"INTERFACE_ENABLE_TESTING": "OFF",
-				"INTERFACE_ENABLE_LTO": "ON"
-			}
-		},
-		{
-			"name": "minimal",
-			"displayName": "Minimal (core + CAN + DB only, no HAL/TUI)",
-			"inherits": "base",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"INTERFACE_ENABLE_CAN": "ON",
-				"INTERFACE_ENABLE_CAN_DB": "ON",
-				"INTERFACE_ENABLE_CAN_TRACE": "OFF",
-				"INTERFACE_ENABLE_CAN_HAL": "OFF",
-				"INTERFACE_ENABLE_UDS": "OFF",
-				"INTERFACE_ENABLE_CANOPEN": "OFF",
-				"INTERFACE_ENABLE_TUI": "OFF",
-				"INTERFACE_ENABLE_TESTING": "ON"
-			}
-		},
-		{
-			"name": "can-tools",
-			"displayName": "CAN Tools (CAN libs + TUI, no UDS/CANopen)",
-			"inherits": "base",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"INTERFACE_ENABLE_CAN": "ON",
-				"INTERFACE_ENABLE_CAN_DB": "ON",
-				"INTERFACE_ENABLE_CAN_TRACE": "ON",
-				"INTERFACE_ENABLE_CAN_HAL": "ON",
-				"INTERFACE_ENABLE_UDS": "OFF",
-				"INTERFACE_ENABLE_CANOPEN": "OFF",
-				"INTERFACE_ENABLE_TUI": "ON",
-				"INTERFACE_ENABLE_TESTING": "ON"
-			}
-		},
-		{
-			"name": "full",
-			"displayName": "Full (everything enabled)",
-			"inherits": "base",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"INTERFACE_ENABLE_CAN": "ON",
-				"INTERFACE_ENABLE_CAN_DB": "ON",
-				"INTERFACE_ENABLE_CAN_TRACE": "ON",
-				"INTERFACE_ENABLE_CAN_HAL": "ON",
-				"INTERFACE_ENABLE_UDS": "ON",
-				"INTERFACE_ENABLE_CANOPEN": "ON",
-				"INTERFACE_ENABLE_TUI": "ON",
-				"INTERFACE_ENABLE_TESTING": "ON",
-				"INTERFACE_ENABLE_SANITIZERS": "OFF"
-			}
-		},
-		{
-			"name": "ci-linux-gcc",
-			"displayName": "CI Linux (GCC)",
-			"inherits": "full",
-			"cacheVariables": {
-				"CMAKE_CXX_COMPILER": "g++"
-			}
-		},
-		{
-			"name": "ci-linux-clang",
-			"displayName": "CI Linux (Clang)",
-			"inherits": "full",
-			"cacheVariables": {
-				"CMAKE_CXX_COMPILER": "clang++"
-			}
-		},
-		{
-			"name": "ci-windows-msvc",
-			"displayName": "CI Windows (MSVC)",
-			"inherits": "full",
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
-			},
-			"cacheVariables": {
-				"CMAKE_CXX_COMPILER": "cl"
-			}
-		}
-	],
-	"buildPresets": [
-		{
-			"name": "dev",
-			"configurePreset": "dev"
-		},
-		{
-			"name": "release",
-			"configurePreset": "release"
-		},
-		{
-			"name": "minimal",
-			"configurePreset": "minimal"
-		},
-		{
-			"name": "can-tools",
-			"configurePreset": "can-tools"
-		},
-		{
-			"name": "full",
-			"configurePreset": "full"
-		}
-	],
-	"testPresets": [
-		{
-			"name": "dev",
-			"configurePreset": "dev",
-			"output": {
-				"outputOnFailure": true,
-				"verbosity": "default"
-			}
-		},
-		{
-			"name": "full",
-			"configurePreset": "full",
-			"output": {
-				"outputOnFailure": true,
-				"verbosity": "default"
-			}
-		}
-	]
+            }
+        },
+        {
+            "name": "dev",
+            "displayName": "Development (Debug, all features, sanitizers)",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "INTERFACE_ENABLE_CAN": "ON",
+                "INTERFACE_ENABLE_CAN_DB": "ON",
+                "INTERFACE_ENABLE_CAN_TRACE": "ON",
+                "INTERFACE_ENABLE_CAN_HAL": "ON",
+                "INTERFACE_ENABLE_CAN_SCRIPT": "ON",
+                "INTERFACE_ENABLE_UDS": "ON",
+                "INTERFACE_ENABLE_CANOPEN": "ON",
+                "INTERFACE_ENABLE_TUI": "ON",
+                "INTERFACE_ENABLE_TESTING": "ON",
+                "INTERFACE_ENABLE_SANITIZERS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release (optimized, no tests)",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "INTERFACE_ENABLE_CAN": "ON",
+                "INTERFACE_ENABLE_CAN_DB": "ON",
+                "INTERFACE_ENABLE_CAN_TRACE": "ON",
+                "INTERFACE_ENABLE_CAN_HAL": "ON",
+                "INTERFACE_ENABLE_CAN_SCRIPT": "ON",
+                "INTERFACE_ENABLE_UDS": "ON",
+                "INTERFACE_ENABLE_CANOPEN": "ON",
+                "INTERFACE_ENABLE_TUI": "ON",
+                "INTERFACE_ENABLE_TESTING": "OFF",
+                "INTERFACE_ENABLE_LTO": "ON"
+            }
+        },
+        {
+            "name": "minimal",
+            "displayName": "Minimal (core + CAN + DB only, no HAL/TUI)",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "INTERFACE_ENABLE_CAN": "ON",
+                "INTERFACE_ENABLE_CAN_DB": "ON",
+                "INTERFACE_ENABLE_CAN_TRACE": "OFF",
+                "INTERFACE_ENABLE_CAN_HAL": "OFF",
+                "INTERFACE_ENABLE_UDS": "OFF",
+                "INTERFACE_ENABLE_CANOPEN": "OFF",
+                "INTERFACE_ENABLE_TUI": "OFF",
+                "INTERFACE_ENABLE_TESTING": "ON"
+            }
+        },
+        {
+            "name": "can-tools",
+            "displayName": "CAN Tools (CAN libs + TUI, no UDS/CANopen)",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "INTERFACE_ENABLE_CAN": "ON",
+                "INTERFACE_ENABLE_CAN_DB": "ON",
+                "INTERFACE_ENABLE_CAN_TRACE": "ON",
+                "INTERFACE_ENABLE_CAN_HAL": "ON",
+                "INTERFACE_ENABLE_CAN_SCRIPT": "ON",
+                "INTERFACE_ENABLE_UDS": "OFF",
+                "INTERFACE_ENABLE_CANOPEN": "OFF",
+                "INTERFACE_ENABLE_TUI": "ON",
+                "INTERFACE_ENABLE_TESTING": "ON"
+            }
+        },
+        {
+            "name": "full",
+            "displayName": "Full (everything enabled)",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "INTERFACE_ENABLE_CAN": "ON",
+                "INTERFACE_ENABLE_CAN_DB": "ON",
+                "INTERFACE_ENABLE_CAN_TRACE": "ON",
+                "INTERFACE_ENABLE_CAN_HAL": "ON",
+                "INTERFACE_ENABLE_CAN_SCRIPT": "ON",
+                "INTERFACE_ENABLE_UDS": "ON",
+                "INTERFACE_ENABLE_CANOPEN": "ON",
+                "INTERFACE_ENABLE_TUI": "ON",
+                "INTERFACE_ENABLE_TESTING": "ON",
+                "INTERFACE_ENABLE_SANITIZERS": "OFF"
+            }
+        },
+        {
+            "name": "ci-linux-gcc",
+            "displayName": "CI Linux (GCC)",
+            "inherits": "full",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "ci-linux-clang",
+            "displayName": "CI Linux (Clang)",
+            "inherits": "full",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "ci-windows-msvc",
+            "displayName": "CI Windows (MSVC)",
+            "inherits": "full",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "cl"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "dev",
+            "configurePreset": "dev"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        },
+        {
+            "name": "minimal",
+            "configurePreset": "minimal"
+        },
+        {
+            "name": "can-tools",
+            "configurePreset": "can-tools"
+        },
+        {
+            "name": "full",
+            "configurePreset": "full"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "dev",
+            "configurePreset": "dev",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default"
+            }
+        },
+        {
+            "name": "full",
+            "configurePreset": "full",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default"
+            }
+        }
+    ]
 }
