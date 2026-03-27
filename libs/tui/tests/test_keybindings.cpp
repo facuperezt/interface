@@ -466,7 +466,40 @@ TEST_CASE("from_ftxui_event handles special keys", "[tui][keybindings]") {
 }
 
 // ===========================================================================
-// 21. load_from_file reports error on missing file
+// 21. Ctrl+letter via Event::Special (FTXUI sends Ctrl+A..Z as Special, not Character)
+// ===========================================================================
+
+TEST_CASE("Ctrl+letter events via Event::Special are recognized",
+          "[tui][keybindings]") {
+    c_keybindings kb;
+
+    SECTION("Ctrl+Q via Special matches quit") {
+        // FTXUI sends Ctrl+Q as Event::Special({17}) -- 17 = 'Q' - 'A' + 1
+        auto ctrl_q = ftxui::Event::Special({17});
+        REQUIRE(kb.matches(ctrl_q, e_action::quit));
+    }
+
+    SECTION("Ctrl+F via Special matches search") {
+        // Ctrl+F = Special({6})
+        auto ctrl_f = ftxui::Event::Special({6});
+        REQUIRE(kb.matches(ctrl_f, e_action::search));
+    }
+
+    SECTION("Ctrl+E via Special matches export_data") {
+        // Ctrl+E = Special({5})
+        auto ctrl_e = ftxui::Event::Special({5});
+        REQUIRE(kb.matches(ctrl_e, e_action::export_data));
+    }
+
+    SECTION("Ctrl+R via Special matches reset_detector") {
+        // Ctrl+R = Special({18})
+        auto ctrl_r = ftxui::Event::Special({18});
+        REQUIRE(kb.matches(ctrl_r, e_action::reset_detector));
+    }
+}
+
+// ===========================================================================
+// 22. load_from_file reports error on missing file
 // ===========================================================================
 
 TEST_CASE("load_from_file reports error on missing file",

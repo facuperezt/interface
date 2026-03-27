@@ -203,26 +203,27 @@ auto c_key_combo::from_ftxui_event(const ftxui::Event& e)
     if (e == ftxui::Event::F11) return c_key_combo{"F11"};
     if (e == ftxui::Event::F12) return c_key_combo{"F12"};
 
-    // Ctrl+letter — FTXUI encodes Ctrl+A as '\x01', Ctrl+B as '\x02', etc.
-    if (e.is_character()) {
-        auto input = e.input();
-        if (input.size() == 1) {
-            char ch = input[0];
-            // Ctrl+A to Ctrl+Z (0x01 to 0x1A)
-            if (ch >= '\x01' && ch <= '\x1A') {
-                std::string key_name(1, static_cast<char>('A' + (ch - '\x01')));
-                return c_key_combo{key_name, true};
-            }
-            // Regular printable character
-            if (ch >= '!' && ch <= '~') {
-                // Uppercase letter indicates Shift was held.
-                if (ch >= 'A' && ch <= 'Z') {
-                    std::string key_name(1, ch);
-                    return c_key_combo{key_name, false, false, true};
-                }
+    // Ctrl+letter and printable characters.
+    // FTXUI sends Ctrl+A..Z as Event::Special({1..26}), NOT Character.
+    // Regular printable keys come as Event::Character. We check the raw
+    // input bytes for both cases.
+    auto input = e.input();
+    if (input.size() == 1) {
+        char ch = input[0];
+        // Ctrl+A to Ctrl+Z (0x01 to 0x1A)
+        if (ch >= '\x01' && ch <= '\x1A') {
+            std::string key_name(1, static_cast<char>('A' + (ch - '\x01')));
+            return c_key_combo{key_name, true};
+        }
+        // Regular printable character
+        if (ch >= '!' && ch <= '~') {
+            // Uppercase letter indicates Shift was held.
+            if (ch >= 'A' && ch <= 'Z') {
                 std::string key_name(1, ch);
-                return c_key_combo{key_name};
+                return c_key_combo{key_name, false, false, true};
             }
+            std::string key_name(1, ch);
+            return c_key_combo{key_name};
         }
     }
 

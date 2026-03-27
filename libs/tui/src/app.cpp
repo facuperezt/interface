@@ -40,8 +40,6 @@ auto c_app::run() -> int {
         "CANopen Explorer",
     };
 
-    constexpr int k_num_tabs = 4;
-
     auto tab_toggle = Toggle(&tab_names, &selected_tab);
 
     // Placeholder content for each tab
@@ -94,16 +92,24 @@ auto c_app::run() -> int {
     auto screen = ScreenInteractive::Fullscreen();
 
     // Wrap with a CatchEvent to handle keybindings.
-    // Note: Tab/Shift+Tab are left to FTXUI's Toggle component so both the
-    // tab bar highlight AND the content pane update together. We only
-    // intercept non-Toggle shortcuts (quit, number keys) here.
+    // FTXUI's Toggle navigates with ArrowLeft/ArrowRight, not Tab.
+    // We intercept Tab/Shift+Tab and forward as arrow events so the
+    // Toggle highlight AND selected_tab stay in sync.
     auto with_keybindings = CatchEvent(main_component, [&](Event event) -> bool {
         if (m_keybindings.matches(event, e_action::quit)) {
             screen.Exit();
             return true;
         }
-        // Number keys for direct tab selection -- Toggle reads selected_tab
-        // on next render, so just updating the variable is sufficient.
+        // Tab/Shift+Tab: translate to ArrowRight/ArrowLeft for the Toggle
+        if (m_keybindings.matches(event, e_action::next_tab)) {
+            tab_toggle->OnEvent(Event::ArrowRight);
+            return true;
+        }
+        if (m_keybindings.matches(event, e_action::prev_tab)) {
+            tab_toggle->OnEvent(Event::ArrowLeft);
+            return true;
+        }
+        // Number keys for direct tab selection
         if (m_keybindings.matches(event, e_action::tab_1)) {
             selected_tab = 0;
             return true;
@@ -120,8 +126,6 @@ auto c_app::run() -> int {
             selected_tab = 3;
             return true;
         }
-        // Let Tab/Shift+Tab fall through to FTXUI's Toggle so both the
-        // tab bar highlight and the content pane update in sync.
         return false;
     });
 
