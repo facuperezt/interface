@@ -3,6 +3,7 @@
 /// @file error.hpp
 /// @brief Error handling utilities using std::expected (C++23).
 
+#include <cstdint>
 #include <expected>
 #include <string>
 #include <source_location>
