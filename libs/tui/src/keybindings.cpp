@@ -208,6 +208,21 @@ auto c_key_combo::from_ftxui_event(const ftxui::Event& e)
     // Regular printable keys come as Event::Character. We check the raw
     // input bytes for both cases.
     auto input = e.input();
+
+    // Alt+key: terminals send ESC (0x1B) followed by the key character.
+    // FTXUI delivers this as a 2-byte SPECIAL event.
+    if (input.size() == 2 && input[0] == '\x1B') {
+        char ch = input[1];
+        if (ch >= '!' && ch <= '~') {
+            if (ch >= 'A' && ch <= 'Z') {
+                std::string key_name(1, ch);
+                return c_key_combo{key_name, false, true, true}; // Alt+Shift
+            }
+            std::string key_name(1, ch);
+            return c_key_combo{key_name, false, true}; // Alt+key
+        }
+    }
+
     if (input.size() == 1) {
         char ch = input[0];
         // Ctrl+A to Ctrl+Z (0x01 to 0x1A)
@@ -396,11 +411,11 @@ auto c_keybindings::load_defaults() -> void {
     // Navigation
     m_bindings[e_action::next_tab]  = c_key_combo{"Tab"};
     m_bindings[e_action::prev_tab]  = c_key_combo{"Tab", false, false, true}; // Shift+Tab
-    m_bindings[e_action::tab_1]     = c_key_combo{"1"};
-    m_bindings[e_action::tab_2]     = c_key_combo{"2"};
-    m_bindings[e_action::tab_3]     = c_key_combo{"3"};
-    m_bindings[e_action::tab_4]     = c_key_combo{"4"};
-    m_bindings[e_action::tab_5]     = c_key_combo{"5"};
+    m_bindings[e_action::tab_1]     = c_key_combo{"1", false, true}; // Alt+1
+    m_bindings[e_action::tab_2]     = c_key_combo{"2", false, true}; // Alt+2
+    m_bindings[e_action::tab_3]     = c_key_combo{"3", false, true}; // Alt+3
+    m_bindings[e_action::tab_4]     = c_key_combo{"4", false, true}; // Alt+4
+    m_bindings[e_action::tab_5]     = c_key_combo{"5", false, true}; // Alt+5
 
     // General
     m_bindings[e_action::quit]         = c_key_combo{"Q", true};   // Ctrl+Q

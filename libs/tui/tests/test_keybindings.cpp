@@ -499,7 +499,78 @@ TEST_CASE("Ctrl+letter events via Event::Special are recognized",
 }
 
 // ===========================================================================
-// 22. load_from_file reports error on missing file
+// 22. Alt+key events via ESC prefix are recognized
+// ===========================================================================
+
+TEST_CASE("Alt+key events via ESC prefix are recognized",
+          "[tui][keybindings]") {
+    c_keybindings kb;
+
+    SECTION("Alt+1 via ESC+1 matches tab_1") {
+        // Terminals send Alt+1 as ESC (0x1B) followed by '1'
+        auto alt_1 = ftxui::Event::Special({0x1B, '1'});
+        REQUIRE(kb.matches(alt_1, e_action::tab_1));
+    }
+
+    SECTION("Alt+2 via ESC+2 matches tab_2") {
+        auto alt_2 = ftxui::Event::Special({0x1B, '2'});
+        REQUIRE(kb.matches(alt_2, e_action::tab_2));
+    }
+
+    SECTION("Alt+3 via ESC+3 matches tab_3") {
+        auto alt_3 = ftxui::Event::Special({0x1B, '3'});
+        REQUIRE(kb.matches(alt_3, e_action::tab_3));
+    }
+
+    SECTION("Alt+4 via ESC+4 matches tab_4") {
+        auto alt_4 = ftxui::Event::Special({0x1B, '4'});
+        REQUIRE(kb.matches(alt_4, e_action::tab_4));
+    }
+
+    SECTION("Alt+lowercase letter is detected") {
+        auto alt_x = ftxui::Event::Special({0x1B, 'x'});
+        auto combo = c_key_combo::from_ftxui_event(alt_x);
+        REQUIRE(combo.has_value());
+        REQUIRE(combo->key == "x");
+        REQUIRE(combo->alt == true);
+        REQUIRE(combo->shift == false);
+    }
+
+    SECTION("Alt+uppercase letter sets alt and shift") {
+        auto alt_X = ftxui::Event::Special({0x1B, 'X'});
+        auto combo = c_key_combo::from_ftxui_event(alt_X);
+        REQUIRE(combo.has_value());
+        REQUIRE(combo->key == "X");
+        REQUIRE(combo->alt == true);
+        REQUIRE(combo->shift == true);
+    }
+}
+
+// ===========================================================================
+// 23. Default tab bindings use Alt+number, not bare numbers
+// ===========================================================================
+
+TEST_CASE("Default tab bindings use Alt+number", "[tui][keybindings]") {
+    c_keybindings kb;
+
+    auto tab1 = kb.combo_for(e_action::tab_1);
+    REQUIRE(tab1.has_value());
+    REQUIRE(tab1->key == "1");
+    REQUIRE(tab1->alt == true);
+    REQUIRE(tab1->ctrl == false);
+
+    auto tab4 = kb.combo_for(e_action::tab_4);
+    REQUIRE(tab4.has_value());
+    REQUIRE(tab4->key == "4");
+    REQUIRE(tab4->alt == true);
+
+    // Bare number key should NOT match tab selection
+    REQUIRE(!kb.matches(ftxui::Event::Character('1'), e_action::tab_1));
+    REQUIRE(!kb.matches(ftxui::Event::Character('2'), e_action::tab_2));
+}
+
+// ===========================================================================
+// 24. load_from_file reports error on missing file
 // ===========================================================================
 
 TEST_CASE("load_from_file reports error on missing file",
