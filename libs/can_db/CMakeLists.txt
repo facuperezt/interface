@@ -4,6 +4,7 @@
 add_library(interface_can_db STATIC
     src/database.cpp
     src/c_dbc_parser.cpp
+    src/c_trace_decoder.cpp
 )
 add_library(interface::can_db ALIAS interface_can_db)
 
@@ -16,6 +17,7 @@ target_include_directories(interface_can_db
 target_link_libraries(interface_can_db
     PUBLIC
         interface::can
+        interface::can_trace
         interface::core
 )
 

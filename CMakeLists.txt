@@ -45,16 +45,16 @@ if(INTERFACE_ENABLE_CAN)
     add_subdirectory(libs/can)
 endif()
 
-if(INTERFACE_ENABLE_CAN_DB)
-    add_subdirectory(libs/can_db)
-endif()
-
 if(INTERFACE_ENABLE_CAN_HAL)
     add_subdirectory(libs/can_hal)
 endif()
 
 if(INTERFACE_ENABLE_CAN_TRACE)
     add_subdirectory(libs/can_trace)
+endif()
+
+if(INTERFACE_ENABLE_CAN_DB)
+    add_subdirectory(libs/can_db)
 endif()
 
 if(INTERFACE_ENABLE_CAN_SCRIPT)

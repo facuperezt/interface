@@ -2,6 +2,7 @@ add_executable(test_can_db
     test_database.cpp
     test_signal_decoder.cpp
     test_dbc_parser.cpp
+    test_trace_decoder.cpp
 )
 
 target_link_libraries(test_can_db
