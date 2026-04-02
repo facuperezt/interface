@@ -226,7 +226,7 @@ auto c_app::run() -> int {
         return false;
     });
 
-    auto trace_view_renderer = Renderer(trace_controls_with_enter, [tv_state, trace_controls_with_enter] {
+    auto trace_view_renderer = Renderer(trace_controls_with_enter, [tv_state, trace_controls] {
         Elements header_row;
         header_row.push_back(text("Timestamp") | size(WIDTH, EQUAL, 16) | bold);
         header_row.push_back(text("ID") | size(WIDTH, EQUAL, 8) | bold);
@@ -294,11 +294,11 @@ auto c_app::run() -> int {
             separator(),
             hbox({
                 text("DBC File: ") | bold,
-                trace_controls_with_enter->ChildAt(0)->Render() | flex,
+                trace_controls->ChildAt(0)->Render() | flex,
                 text("  Trace File: ") | bold,
-                trace_controls_with_enter->ChildAt(1)->Render() | flex,
+                trace_controls->ChildAt(1)->Render() | flex,
                 text(" "),
-                trace_controls_with_enter->ChildAt(2)->Render(),
+                trace_controls->ChildAt(2)->Render(),
             }),
             separator(),
             hbox(header_row),
