@@ -593,3 +593,46 @@ TEST_CASE("from_json reports error when bindings key is missing",
     REQUIRE(!result.has_value());
     REQUIRE(result.error().category == interface::e_error_category::parse);
 }
+
+// ===========================================================================
+// 25. half_page_up and half_page_down have default bindings
+// ===========================================================================
+
+TEST_CASE("half_page_up and half_page_down have default bindings",
+          "[tui][keybindings]") {
+    c_keybindings kb;
+
+    auto hpu = kb.combo_for(e_action::half_page_up);
+    REQUIRE(hpu.has_value());
+    REQUIRE(hpu->key == "U");
+    REQUIRE(hpu->ctrl == true);
+
+    auto hpd = kb.combo_for(e_action::half_page_down);
+    REQUIRE(hpd.has_value());
+    REQUIRE(hpd->key == "D");
+    REQUIRE(hpd->ctrl == true);
+}
+
+// ===========================================================================
+// 26. Ctrl+D via Event::Special matches half_page_down
+// ===========================================================================
+
+TEST_CASE("Ctrl+D via Event::Special matches half_page_down",
+          "[tui][keybindings]") {
+    c_keybindings kb;
+    // Ctrl+D = Special({4}) -- 4 = 'D' - 'A' + 1
+    auto ctrl_d = ftxui::Event::Special({4});
+    REQUIRE(kb.matches(ctrl_d, e_action::half_page_down));
+}
+
+// ===========================================================================
+// 27. Ctrl+U via Event::Special matches half_page_up
+// ===========================================================================
+
+TEST_CASE("Ctrl+U via Event::Special matches half_page_up",
+          "[tui][keybindings]") {
+    c_keybindings kb;
+    // Ctrl+U = Special({21}) -- 21 = 'U' - 'A' + 1
+    auto ctrl_u = ftxui::Event::Special({21});
+    REQUIRE(kb.matches(ctrl_u, e_action::half_page_up));
+}

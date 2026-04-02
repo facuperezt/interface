@@ -42,6 +42,8 @@ constexpr std::array k_action_table = {
     action_info{e_action::scroll_down,    "scroll_down",    "Trace Viewer"},
     action_info{e_action::page_up,        "page_up",        "Trace Viewer"},
     action_info{e_action::page_down,      "page_down",      "Trace Viewer"},
+    action_info{e_action::half_page_up,  "half_page_up",   "Trace Viewer"},
+    action_info{e_action::half_page_down,"half_page_down",  "Trace Viewer"},
     action_info{e_action::go_to_top,      "go_to_top",      "Trace Viewer"},
     action_info{e_action::go_to_bottom,   "go_to_bottom",   "Trace Viewer"},
     action_info{e_action::search,         "search",         "Trace Viewer"},
@@ -425,8 +427,10 @@ auto c_keybindings::load_defaults() -> void {
     // Trace Viewer
     m_bindings[e_action::scroll_up]    = c_key_combo{"k"};
     m_bindings[e_action::scroll_down]  = c_key_combo{"j"};
-    m_bindings[e_action::page_up]      = c_key_combo{"PgUp"};
+    m_bindings[e_action::page_up]       = c_key_combo{"PgUp"};
     m_bindings[e_action::page_down]    = c_key_combo{"PgDn"};
+    m_bindings[e_action::half_page_up]   = c_key_combo{"U", true};  // Ctrl+U
+    m_bindings[e_action::half_page_down] = c_key_combo{"D", true};  // Ctrl+D
     m_bindings[e_action::go_to_top]    = c_key_combo{"g"};
     m_bindings[e_action::go_to_bottom] = c_key_combo{"G", false, false, true}; // Shift+g
     m_bindings[e_action::search]       = c_key_combo{"F", true};   // Ctrl+F

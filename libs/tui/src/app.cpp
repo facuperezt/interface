@@ -8,6 +8,8 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include <algorithm>
+#include <filesystem>
 #include <format>
 #include <string>
 #include <vector>
@@ -30,7 +32,70 @@ struct c_trace_viewer_state {
     std::vector<can_db::c_decoded_frame> decoded_frames;
     int scroll_position{0};
     bool has_error{false};
+    bool trace_focused{false};
+    int cursor_row{0};
+    int visible_rows{20};
 };
+
+namespace {
+
+auto complete_path(std::string& current_path) -> void {
+    namespace fs = std::filesystem;
+
+    if (current_path.empty()) {
+        current_path = "./";
+        return;
+    }
+
+    fs::path partial(current_path);
+    fs::path parent = partial.parent_path();
+    std::string prefix = partial.filename().string();
+
+    // If the path ends with '/', list that directory's contents
+    if (current_path.back() == '/' || current_path.back() == '\\') {
+        parent = partial;
+        prefix = "";
+    }
+
+    if (parent.empty()) parent = ".";
+
+    std::error_code ec;
+    if (!fs::exists(parent, ec) || !fs::is_directory(parent, ec)) return;
+
+    std::vector<std::string> matches;
+    for (const auto& entry : fs::directory_iterator(parent, ec)) {
+        auto name = entry.path().filename().string();
+        if (name.starts_with(prefix)) {
+            matches.push_back(name);
+        }
+    }
+
+    if (matches.empty()) return;
+
+    if (matches.size() == 1) {
+        auto completed = parent / matches[0];
+        current_path = completed.string();
+        if (fs::is_directory(completed, ec)) {
+            current_path += '/';
+        }
+        return;
+    }
+
+    // Multiple matches: complete the longest common prefix
+    std::string common = matches[0];
+    for (std::size_t i = 1; i < matches.size(); ++i) {
+        std::size_t j = 0;
+        while (j < common.size() && j < matches[i].size() && common[j] == matches[i][j]) {
+            ++j;
+        }
+        common = common.substr(0, j);
+    }
+    if (common.size() > prefix.size()) {
+        current_path = (parent / common).string();
+    }
+}
+
+} // anonymous namespace
 
 #endif // INTERFACE_HAS_CAN_DB && INTERFACE_HAS_CAN_TRACE
 
@@ -72,10 +137,12 @@ auto c_app::run() -> int {
     auto dbc_input = Input(&tv_state->dbc_path, "path/to/file.dbc");
     auto trace_input = Input(&tv_state->trace_path, "path/to/file.asc");
 
-    auto decode_button = Button("Decode", [tv_state] {
+    // Shared decode logic used by both button and Enter key
+    auto do_decode = [tv_state] {
         tv_state->has_error = false;
         tv_state->decoded_frames.clear();
         tv_state->scroll_position = 0;
+        tv_state->cursor_row = 0;
 
         // Parse DBC
         can_db::c_dbc_parser parser;
@@ -118,15 +185,48 @@ auto c_app::run() -> int {
             "Loaded: {} | {} frames decoded ({} known, {} unknown)",
             dbc_name, tv_state->decoded_frames.size(), known_count, unknown_count
         );
+
+        // Auto-focus trace table after successful decode
+        if (!tv_state->decoded_frames.empty()) {
+            tv_state->trace_focused = true;
+        }
+    };
+
+    auto decode_button = Button("Decode", do_decode);
+
+    // Wrap inputs with Tab-to-autocomplete
+    auto dbc_input_with_complete = CatchEvent(dbc_input, [tv_state](Event event) -> bool {
+        if (event == Event::Tab) {
+            complete_path(tv_state->dbc_path);
+            return true;
+        }
+        return false;
+    });
+
+    auto trace_input_with_complete = CatchEvent(trace_input, [tv_state](Event event) -> bool {
+        if (event == Event::Tab) {
+            complete_path(tv_state->trace_path);
+            return true;
+        }
+        return false;
     });
 
     auto trace_controls = Container::Horizontal({
-        dbc_input,
-        trace_input,
+        dbc_input_with_complete,
+        trace_input_with_complete,
         decode_button,
     });
 
-    auto trace_view = Renderer(trace_controls, [tv_state, trace_controls] {
+    // Wrap controls so Enter triggers decode from any input field
+    auto trace_controls_with_enter = CatchEvent(trace_controls, [do_decode](Event event) -> bool {
+        if (event == Event::Return) {
+            do_decode();
+            return true;
+        }
+        return false;
+    });
+
+    auto trace_view_renderer = Renderer(trace_controls_with_enter, [tv_state, trace_controls_with_enter] {
         Elements header_row;
         header_row.push_back(text("Timestamp") | size(WIDTH, EQUAL, 16) | bold);
         header_row.push_back(text("ID") | size(WIDTH, EQUAL, 8) | bold);
@@ -135,8 +235,19 @@ auto c_app::run() -> int {
         header_row.push_back(text("Data") | size(WIDTH, EQUAL, 26) | bold);
         header_row.push_back(text("Signals") | flex | bold);
 
+        auto total = static_cast<int>(tv_state->decoded_frames.size());
+
+        // Virtual scrolling: only render visible rows around cursor
+        auto half = tv_state->visible_rows / 2;
+        auto scroll_start = std::max(0, tv_state->cursor_row - half);
+        auto scroll_end = std::min(total, scroll_start + tv_state->visible_rows);
+        if (scroll_end == total) {
+            scroll_start = std::max(0, total - tv_state->visible_rows);
+        }
+
         Elements rows;
-        for (const auto& frame : tv_state->decoded_frames) {
+        for (int idx = scroll_start; idx < scroll_end; ++idx) {
+            const auto& frame = tv_state->decoded_frames[static_cast<std::size_t>(idx)];
             auto ts = std::format("{:.6f}",
                 static_cast<double>(frame.raw.timestamp) / 1'000'000.0);
             auto id = std::format("0x{:03X}", frame.raw.id);
@@ -155,6 +266,10 @@ auto c_app::run() -> int {
                 sig_str += std::format("{}={:.2f} {}", sig.name, sig.value, sig.unit);
             }
 
+            auto row_decorator = (idx == tv_state->cursor_row && tv_state->trace_focused)
+                ? inverted
+                : nothing;
+
             rows.push_back(hbox({
                 text(ts) | size(WIDTH, EQUAL, 16),
                 text(id) | size(WIDTH, EQUAL, 8),
@@ -162,29 +277,100 @@ auto c_app::run() -> int {
                 text(dlc) | size(WIDTH, EQUAL, 5),
                 text(data_hex) | size(WIDTH, EQUAL, 26),
                 text(sig_str) | flex,
-            }));
+            }) | row_decorator);
         }
 
         auto status_color = tv_state->has_error ? color(Color::Red) : color(Color::Green);
+
+        // Append row indicator at render time
+        auto display_status = tv_state->status_message;
+        if (!tv_state->decoded_frames.empty() && tv_state->trace_focused) {
+            display_status += std::format(" | Row {}/{}",
+                tv_state->cursor_row + 1, tv_state->decoded_frames.size());
+        }
 
         return vbox({
             text("CAN Trace Viewer") | bold | center,
             separator(),
             hbox({
                 text("DBC File: ") | bold,
-                trace_controls->ChildAt(0)->Render() | flex,
+                trace_controls_with_enter->ChildAt(0)->Render() | flex,
                 text("  Trace File: ") | bold,
-                trace_controls->ChildAt(1)->Render() | flex,
+                trace_controls_with_enter->ChildAt(1)->Render() | flex,
                 text(" "),
-                trace_controls->ChildAt(2)->Render(),
+                trace_controls_with_enter->ChildAt(2)->Render(),
             }),
             separator(),
             hbox(header_row),
             separator(),
-            vbox(std::move(rows)) | vscroll_indicator | yframe | flex,
+            vbox(std::move(rows)) | flex,
             separator(),
-            text(tv_state->status_message) | status_color,
+            text(display_status) | status_color,
         });
+    });
+
+    // Vim scrolling and focus management
+    auto trace_view = CatchEvent(trace_view_renderer, [this, tv_state](Event event) -> bool {
+        if (!tv_state->trace_focused) {
+            // When not focused on trace, Escape focuses the trace (if we have frames)
+            if (event == Event::Escape && !tv_state->decoded_frames.empty()) {
+                tv_state->trace_focused = true;
+                return true;
+            }
+            return false;
+        }
+
+        // Trace is focused -- handle vim motions
+        auto total = static_cast<int>(tv_state->decoded_frames.size());
+        if (total == 0) return false;
+
+        // j / Down
+        if (m_keybindings.matches(event, e_action::scroll_down) || event == Event::ArrowDown) {
+            tv_state->cursor_row = std::min(tv_state->cursor_row + 1, total - 1);
+            return true;
+        }
+        // k / Up
+        if (m_keybindings.matches(event, e_action::scroll_up) || event == Event::ArrowUp) {
+            tv_state->cursor_row = std::max(tv_state->cursor_row - 1, 0);
+            return true;
+        }
+        // Ctrl+D (half page down)
+        if (m_keybindings.matches(event, e_action::half_page_down)) {
+            tv_state->cursor_row = std::min(tv_state->cursor_row + tv_state->visible_rows / 2, total - 1);
+            return true;
+        }
+        // Ctrl+U (half page up)
+        if (m_keybindings.matches(event, e_action::half_page_up)) {
+            tv_state->cursor_row = std::max(tv_state->cursor_row - tv_state->visible_rows / 2, 0);
+            return true;
+        }
+        // g (top)
+        if (m_keybindings.matches(event, e_action::go_to_top)) {
+            tv_state->cursor_row = 0;
+            return true;
+        }
+        // G (bottom)
+        if (m_keybindings.matches(event, e_action::go_to_bottom)) {
+            tv_state->cursor_row = total - 1;
+            return true;
+        }
+        // PgDn
+        if (m_keybindings.matches(event, e_action::page_down)) {
+            tv_state->cursor_row = std::min(tv_state->cursor_row + tv_state->visible_rows, total - 1);
+            return true;
+        }
+        // PgUp
+        if (m_keybindings.matches(event, e_action::page_up)) {
+            tv_state->cursor_row = std::max(tv_state->cursor_row - tv_state->visible_rows, 0);
+            return true;
+        }
+        // Escape or 'i': back to inputs
+        if (event == Event::Escape || event == Event::Character('i')) {
+            tv_state->trace_focused = false;
+            return true;
+        }
+
+        return false;
     });
 
 #else
@@ -241,13 +427,24 @@ auto c_app::run() -> int {
     // FTXUI's Toggle navigates with ArrowLeft/ArrowRight, not Tab.
     // We intercept Tab/Shift+Tab and forward as arrow events so the
     // Toggle highlight AND selected_tab stay in sync.
-    auto with_keybindings = CatchEvent(main_component, [&](Event event) -> bool {
+    auto with_keybindings = CatchEvent(main_component, [&
+#if defined(INTERFACE_HAS_CAN_DB) && defined(INTERFACE_HAS_CAN_TRACE)
+        , tv_state
+#endif
+    ](Event event) -> bool {
         if (m_keybindings.matches(event, e_action::quit)) {
             screen.Exit();
             return true;
         }
-        // Tab/Shift+Tab: translate to ArrowRight/ArrowLeft for the Toggle
-        if (m_keybindings.matches(event, e_action::next_tab)) {
+        // Tab/Shift+Tab: translate to ArrowRight/ArrowLeft for the Toggle.
+        // On the Trace Viewer tab, let Tab pass through for autocomplete
+        // when the trace table is not focused (inputs need Tab).
+#if defined(INTERFACE_HAS_CAN_DB) && defined(INTERFACE_HAS_CAN_TRACE)
+        bool trace_tab_input_active = (selected_tab == 0 && !tv_state->trace_focused);
+#else
+        bool trace_tab_input_active = false;
+#endif
+        if (m_keybindings.matches(event, e_action::next_tab) && !trace_tab_input_active) {
             tab_toggle->OnEvent(Event::ArrowRight);
             return true;
         }

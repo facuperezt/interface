@@ -45,6 +45,8 @@ enum class e_action {
     scroll_down,
     page_up,
     page_down,
+    half_page_up,
+    half_page_down,
     go_to_top,
     go_to_bottom,
     search,
